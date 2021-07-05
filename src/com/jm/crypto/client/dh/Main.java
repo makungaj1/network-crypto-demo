@@ -72,6 +72,7 @@ public class Main {
             byte[] objective;
 
             while (true) {
+
                 if (connectToAFriend) {
                     System.out.println("Connect to a friend");
                     // Request a public key of an IP (Other client: 192.168.0.5)
@@ -133,6 +134,9 @@ public class Main {
                         wrapperObject.setTo(to);
                         wrapperObject.setObjective(objective);
                         wrapperObject.setMessageBody(initMsg);
+                        OtherClient ot = wrapperObject.getOtherClient();
+                        ot.setIvWithOther(null);
+                        wrapperObject.setOtherClient(ot);
 
                         objToServer.writeObject(wrapperObject);
                         objToServer.flush();
@@ -162,6 +166,10 @@ public class Main {
                     wrapperObject.setTo(to);
                     wrapperObject.setObjective(objective);
                     wrapperObject.setMessageBody(initMsg);
+
+                    OtherClient ot = wrapperObject.getOtherClient();
+                    ot.setIvWithOther(null);
+                    wrapperObject.setOtherClient(ot);
 
                     objToServer.writeObject(wrapperObject);
                     objToServer.flush();
