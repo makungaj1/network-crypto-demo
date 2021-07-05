@@ -70,62 +70,93 @@ public class Main {
             byte[] from;
             byte[] to;
             byte[] objective;
-            if (connectToAFriend) {
-                System.out.println("Connect to a friend");
-                // Request a public key of an IP (Other client: 192.168.0.5)
-                // Encrypt data to send to server
-                cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
-                from = cipher.doFinal(MY_IP.getBytes());
-                System.out.println("From: " + Base64.getEncoder().encodeToString(from) + " (" + MY_IP + ")");
-                to = cipher.doFinal(OTHER_IP.getBytes());
-                System.out.println("To: " + Base64.getEncoder().encodeToString(to) + " (" + OTHER_IP + ")");
-                objective = cipher.doFinal("Initial".getBytes());
-                System.out.println("Objective: " + Base64.getEncoder().encodeToString(objective) + " (initial)");
-                wrapperObject = new WrapperObject(from, to, objective);
-                objToServer.writeObject(wrapperObject);
-                objToServer.flush();
-            }
 
-            // Server should return other.publicKey and iv Random
-            System.out.println("From server");
-            wrapperObject = (WrapperObject) objFromServer.readObject();
-            OtherClient otherClient = wrapperObject.getOtherClient();
+            while (true) {
+                if (connectToAFriend) {
+                    System.out.println("Connect to a friend");
+                    // Request a public key of an IP (Other client: 192.168.0.5)
+                    // Encrypt data to send to server
+                    cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+                    from = cipher.doFinal(MY_IP.getBytes());
+                    System.out.println("From: " + Base64.getEncoder().encodeToString(from) + " (" + MY_IP + ")");
+                    to = cipher.doFinal(OTHER_IP.getBytes());
+                    System.out.println("To: " + Base64.getEncoder().encodeToString(to) + " (" + OTHER_IP + ")");
+                    objective = cipher.doFinal("Initial".getBytes());
+                    System.out.println("Objective: " + Base64.getEncoder().encodeToString(objective) + " (initial)");
+                    wrapperObject = new WrapperObject(from, to, objective);
+                    objToServer.writeObject(wrapperObject);
+                    objToServer.flush();
+                }
 
-            // Decrypt meta dada from server
-            cipher.init(Cipher.DECRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
-            from = cipher.doFinal(wrapperObject.getFrom());
-            System.out.println("From: (" + Base64.getEncoder().encodeToString(wrapperObject.getFrom()) + ") " + new String(from));
-            to = cipher.doFinal(wrapperObject.getTo());
-            System.out.println("To: (" + Base64.getEncoder().encodeToString(wrapperObject.getTo()) + ") " + new String(to));
-            objective = cipher.doFinal(wrapperObject.getObjective());
-            System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
+                // Server should return other.publicKey and iv Random
+                System.out.println("From server");
+                wrapperObject = (WrapperObject) objFromServer.readObject();
+                OtherClient otherClient = wrapperObject.getOtherClient();
 
-            String obj = new String(objective);
-            if (obj.equalsIgnoreCase("active") || obj.equalsIgnoreCase("initial")) {
-                System.out.println("Other is active");
+                // Decrypt meta dada from server
+                cipher.init(Cipher.DECRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+                from = cipher.doFinal(wrapperObject.getFrom());
+                System.out.println("From: (" + Base64.getEncoder().encodeToString(wrapperObject.getFrom()) + ") " + new String(from));
+                to = cipher.doFinal(wrapperObject.getTo());
+                System.out.println("To: (" + Base64.getEncoder().encodeToString(wrapperObject.getTo()) + ") " + new String(to));
+                objective = cipher.doFinal(wrapperObject.getObjective());
+                System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
 
-                // Calculate the shared secret key with other
-                keyAgreement.doPhase(otherClient.getOtherPublicKey(), true);
-                otherClient.setSecretKeyWithOther(new SecretKeySpec(shortenKey(keyAgreement.generateSecret()), "AES"));
-                // Calculate the shared IV
-                otherClient.setIvWithOther(new IvParameterSpec(otherClient.getIvByte()));
-                // Print other's keys
-                System.out.println("Other's Public Key: " + Base64.getEncoder().encodeToString(otherClient.getOtherPublicKey().getEncoded()));
-                System.out.println("Shared secret key: " + Base64.getEncoder().encodeToString(otherClient.getSecretKeyWithOther().getEncoded()));
-                System.out.println("Shared IV: " + Base64.getEncoder().encodeToString(otherClient.getIvWithOther().getIV()));
+                String obj = new String(objective);
+                if (obj.equalsIgnoreCase("active") || obj.equalsIgnoreCase("initial")) {
+                    System.out.println("Other is active");
 
-                // If someone wants to talk (sends an initial request, respond back with hello message
-                // To kickoff the chat
-                if (obj.equalsIgnoreCase("initial")) {
+                    // Calculate the shared secret key with other
+                    keyAgreement.doPhase(otherClient.getOtherPublicKey(), true);
+                    otherClient.setSecretKeyWithOther(new SecretKeySpec(shortenKey(keyAgreement.generateSecret()), "AES"));
+                    // Calculate the shared IV
+                    otherClient.setIvWithOther(new IvParameterSpec(otherClient.getIvByte()));
+                    // Print other's keys
+                    System.out.println("Other's Public Key: " + Base64.getEncoder().encodeToString(otherClient.getOtherPublicKey().getEncoded()));
+                    System.out.println("Shared secret key: " + Base64.getEncoder().encodeToString(otherClient.getSecretKeyWithOther().getEncoded()));
+                    System.out.println("Shared IV: " + Base64.getEncoder().encodeToString(otherClient.getIvWithOther().getIV()));
+
+                    // If someone wants to talk (sends an initial request, respond back with hello message
+                    // To kickoff the chat
+                    if (obj.equalsIgnoreCase("initial")) {
+                        cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+                        from = cipher.doFinal(MY_IP.getBytes());
+                        to = cipher.doFinal(OTHER_IP.getBytes());
+                        objective = cipher.doFinal("insta-chat".getBytes());
+
+                        // Initial message
+                        // Encrypt it with only the key shared with other. so the server won't see the decrypted msg
+                        cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
+                        byte[] initMsg = cipher.doFinal((MY_IP + " is ready to chat").getBytes());
+
+                        wrapperObject.setFrom(from);
+                        wrapperObject.setTo(to);
+                        wrapperObject.setObjective(objective);
+                        wrapperObject.setMessageBody(initMsg);
+
+                        objToServer.writeObject(wrapperObject);
+                        objToServer.flush();
+                    }
+
+                } else if (obj.equalsIgnoreCase("insta-chat")) {
+
+                    // Decrypt the message
+                    cipher.init(Cipher.DECRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
+                    byte[] decryptedMsg = cipher.doFinal(wrapperObject.getMessageBody());
+                    System.out.println("Encrypted msg: " + Base64.getEncoder().encodeToString(wrapperObject.getMessageBody()));
+                    System.out.println("Decrypted msg: " + new String(decryptedMsg));
+
                     cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
                     from = cipher.doFinal(MY_IP.getBytes());
                     to = cipher.doFinal(OTHER_IP.getBytes());
                     objective = cipher.doFinal("insta-chat".getBytes());
 
-                    // Initial message
                     // Encrypt it with only the key shared with other. so the server won't see the decrypted msg
                     cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
-                    byte[] initMsg = cipher.doFinal((MY_IP +  " is ready to chat").getBytes());
+                    Scanner input = new Scanner(System.in);
+
+                    System.out.print("You: ");
+                    byte[] initMsg = cipher.doFinal(input.nextLine().getBytes());
 
                     wrapperObject.setFrom(from);
                     wrapperObject.setTo(to);
@@ -134,38 +165,9 @@ public class Main {
 
                     objToServer.writeObject(wrapperObject);
                     objToServer.flush();
+                } else {
+                    System.out.println("Other is inactive");
                 }
-
-            } else if (obj.equalsIgnoreCase("insta-chat")) {
-
-                // Decrypt the message
-                cipher.init(Cipher.DECRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
-                byte[] decryptedMsg = cipher.doFinal(wrapperObject.getMessageBody());
-                System.out.println("Encrypted msg: " + Base64.getEncoder().encodeToString(wrapperObject.getMessageBody()));
-                System.out.println("Decrypted msg: " + new String(decryptedMsg));
-
-                cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
-                from = cipher.doFinal(MY_IP.getBytes());
-                to = cipher.doFinal(OTHER_IP.getBytes());
-                objective = cipher.doFinal("insta-chat".getBytes());
-
-                // Encrypt it with only the key shared with other. so the server won't see the decrypted msg
-                cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
-                Scanner input = new Scanner(System.in);
-
-                System.out.print("You: ");
-                byte[] initMsg = cipher.doFinal(input.nextLine().getBytes());
-
-                wrapperObject.setFrom(from);
-                wrapperObject.setTo(to);
-                wrapperObject.setObjective(objective);
-                wrapperObject.setMessageBody(initMsg);
-
-                objToServer.writeObject(wrapperObject);
-                objToServer.flush();
-            }
-            else {
-                System.out.println("Other is inactive");
             }
 
 
