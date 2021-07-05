@@ -9,7 +9,6 @@ public class OtherClient implements Serializable {
     private byte[] otherIP ;
     private PublicKey otherPublicKey;
     private SecretKey secretKeyWithOther;
-    private IvParameterSpec ivWithOther;
     private byte[] ivByte;
 
     public OtherClient(byte[] otherIP, byte[] ivByte) {
@@ -39,14 +38,6 @@ public class OtherClient implements Serializable {
 
     public void setSecretKeyWithOther(SecretKey secretKeyWithOther) {
         this.secretKeyWithOther = secretKeyWithOther;
-    }
-
-    public IvParameterSpec getIvWithOther() {
-        return ivWithOther;
-    }
-
-    public void setIvWithOther(IvParameterSpec ivWithOther) {
-        this.ivWithOther = ivWithOther;
     }
 
     public byte[] getIvByte() {

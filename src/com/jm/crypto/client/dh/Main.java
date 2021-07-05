@@ -67,7 +67,6 @@ public class Main {
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             WrapperObject wrapperObject;
-            OtherClient otherClient = null;
 
             byte[] from;
             byte[] to;
@@ -105,9 +104,7 @@ public class Main {
                 System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
 
                 String obj = new String(objective);
-                if (obj.equalsIgnoreCase("initial")) {
-                    otherClient = wrapperObject.getOtherClient();
-                }
+                OtherClient otherClient = wrapperObject.getOtherClient();
 
                 if (obj.equalsIgnoreCase("active") || obj.equalsIgnoreCase("initial")) {
                     System.out.println("Other is active");
@@ -115,12 +112,11 @@ public class Main {
                     // Calculate the shared secret key with other
                     keyAgreement.doPhase(otherClient.getOtherPublicKey(), true);
                     otherClient.setSecretKeyWithOther(new SecretKeySpec(shortenKey(keyAgreement.generateSecret()), "AES"));
-                    // Calculate the shared IV
-                    otherClient.setIvWithOther(new IvParameterSpec(otherClient.getIvByte()));
+
                     // Print other's keys
                     System.out.println("Other's Public Key: " + Base64.getEncoder().encodeToString(otherClient.getOtherPublicKey().getEncoded()));
                     System.out.println("Shared secret key: " + Base64.getEncoder().encodeToString(otherClient.getSecretKeyWithOther().getEncoded()));
-                    System.out.println("Shared IV: " + Base64.getEncoder().encodeToString(otherClient.getIvWithOther().getIV()));
+                    System.out.println("Shared IV: " + Base64.getEncoder().encodeToString(otherClient.getIvByte()));
 
                     // If someone wants to talk (sends an initial request, respond back with hello message
                     // To kickoff the chat
@@ -132,7 +128,7 @@ public class Main {
 
                         // Initial message
                         // Encrypt it with only the key shared with other. so the server won't see the decrypted msg
-                        cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
+                        cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), new IvParameterSpec(otherClient.getIvByte()));
                         byte[] initMsg = cipher.doFinal((MY_IP + " is ready to chat").getBytes());
 
                         WrapperObject wo = new WrapperObject(from, to, objective);
@@ -145,7 +141,7 @@ public class Main {
                 } else if (obj.equalsIgnoreCase("insta-chat")) {
 
                     // Decrypt the message
-                    cipher.init(Cipher.DECRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
+                    cipher.init(Cipher.DECRYPT_MODE, otherClient.getSecretKeyWithOther(),new IvParameterSpec(otherClient.getIvByte()));
                     byte[] decryptedMsg = cipher.doFinal(wrapperObject.getMessageBody());
                     System.out.println("Encrypted msg: " + Base64.getEncoder().encodeToString(wrapperObject.getMessageBody()));
                     System.out.println("Decrypted msg: " + new String(decryptedMsg));
@@ -156,7 +152,7 @@ public class Main {
                     objective = cipher.doFinal("insta-chat".getBytes());
 
                     // Encrypt it with only the key shared with other. so the server won't see the decrypted msg
-                    cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
+                    cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), new IvParameterSpec(otherClient.getIvByte()));
                     Scanner input = new Scanner(System.in);
 
                     System.out.print("You: ");
