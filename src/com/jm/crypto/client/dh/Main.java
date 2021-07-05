@@ -130,15 +130,10 @@ public class Main {
                         cipher.init(Cipher.ENCRYPT_MODE, otherClient.getSecretKeyWithOther(), otherClient.getIvWithOther());
                         byte[] initMsg = cipher.doFinal((MY_IP + " is ready to chat").getBytes());
 
-                        wrapperObject.setFrom(from);
-                        wrapperObject.setTo(to);
-                        wrapperObject.setObjective(objective);
-                        wrapperObject.setMessageBody(initMsg);
-                        OtherClient ot = wrapperObject.getOtherClient();
-                        ot.setIvWithOther(null);
-                        wrapperObject.setOtherClient(ot);
+                        WrapperObject wo = new WrapperObject(from, to, objective);
+                        wo.setMessageBody(initMsg);
 
-                        objToServer.writeObject(wrapperObject);
+                        objToServer.writeObject(wo);
                         objToServer.flush();
                     }
 
@@ -162,16 +157,10 @@ public class Main {
                     System.out.print("You: ");
                     byte[] initMsg = cipher.doFinal(input.nextLine().getBytes());
 
-                    wrapperObject.setFrom(from);
-                    wrapperObject.setTo(to);
-                    wrapperObject.setObjective(objective);
-                    wrapperObject.setMessageBody(initMsg);
+                    WrapperObject wo = new WrapperObject(from, to, objective);
+                    wo.setMessageBody(initMsg);
 
-                    OtherClient ot = wrapperObject.getOtherClient();
-                    ot.setIvWithOther(null);
-                    wrapperObject.setOtherClient(ot);
-
-                    objToServer.writeObject(wrapperObject);
+                    objToServer.writeObject(wo);
                     objToServer.flush();
                 } else {
                     System.out.println("Other is inactive");
