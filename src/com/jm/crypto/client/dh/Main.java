@@ -58,23 +58,30 @@ public class Main {
             System.out.println("Shared key: " + Base64.getEncoder().encodeToString(serverProxy.getSecretKeyWithServer().getEncoded()));
             System.out.println("Shared iv: " + Base64.getEncoder().encodeToString(serverProxy.getIvWithServer().getIV()));
 
+
+            // Connect to a friend
+            boolean connectToAFriend = true;
+
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             WrapperObject wrapperObject;
             byte[] from;
             byte[] to;
             byte[] objective;
-            // Request a public key of an IP (Other client: 192.168.0.5)
+            if (connectToAFriend) {
+                System.out.println("Connect to a friend");
+                // Request a public key of an IP (Other client: 192.168.0.5)
                 // Encrypt data to send to server
-            cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
-            from = cipher.doFinal("192.168.0.12".getBytes());
-            System.out.println("From: " + Base64.getEncoder().encodeToString(from));
-            to = cipher.doFinal("192.168.0.5".getBytes());
-            System.out.println("To: " + Base64.getEncoder().encodeToString(to));
-            objective = cipher.doFinal("Initial".getBytes());
-            System.out.println("Objective: " + Base64.getEncoder().encodeToString(objective));
-            wrapperObject = new WrapperObject(from, to, objective);
-            objToServer.writeObject(wrapperObject);
-            objToServer.flush();
+                cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+                from = cipher.doFinal("192.168.0.12".getBytes());
+                System.out.println("From: " + Base64.getEncoder().encodeToString(from) + " (192.168.0.12)");
+                to = cipher.doFinal("192.168.0.5".getBytes());
+                System.out.println("To: " + Base64.getEncoder().encodeToString(to) + " (192.168.0.5)");
+                objective = cipher.doFinal("Initial".getBytes());
+                System.out.println("Objective: " + Base64.getEncoder().encodeToString(objective) + " (initial)");
+                wrapperObject = new WrapperObject(from, to, objective);
+                objToServer.writeObject(wrapperObject);
+                objToServer.flush();
+            }
 
             // Server should return other.publicKey and iv Random
             System.out.println("From server");
@@ -88,7 +95,8 @@ public class Main {
             objective = cipher.doFinal(wrapperObject.getObjective());
             System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
 
-            if (new String(objective).equalsIgnoreCase("success")) {
+            String obj = new String(objective);
+            if (obj.equalsIgnoreCase("active") || obj.equalsIgnoreCase("initial")) {
                 System.out.println("Other is active");
 
                 OtherClient otherClient = wrapperObject.getOtherClient();
