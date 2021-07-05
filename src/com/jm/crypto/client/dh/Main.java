@@ -1,8 +1,6 @@
 package com.jm.crypto.client.dh;
 
-import com.jm.crypto.client.MessageObject;
-import com.jm.crypto.client.SharedSecret;
-import com.jm.crypto.client.Utils;
+import com.jm.crypto.client.*;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -60,8 +58,56 @@ public class Main {
             System.out.println("Shared key: " + Base64.getEncoder().encodeToString(serverProxy.getSecretKeyWithServer().getEncoded()));
             System.out.println("Shared iv: " + Base64.getEncoder().encodeToString(serverProxy.getIvWithServer().getIV()));
 
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            WrapperObject wrapperObject;
+            byte[] from;
+            byte[] to;
+            byte[] objective;
+            // Request a public key of an IP (Other client: 192.168.0.5)
+                // Encrypt data to send to server
+            cipher.init(Cipher.ENCRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+            from = cipher.doFinal("192.168.0.12".getBytes());
+            System.out.println("From: " + Base64.getEncoder().encodeToString(from));
+            to = cipher.doFinal("192.168.0.5".getBytes());
+            System.out.println("To: " + Base64.getEncoder().encodeToString(to));
+            objective = cipher.doFinal("Initial".getBytes());
+            System.out.println("Objective: " + Base64.getEncoder().encodeToString(objective));
+            wrapperObject = new WrapperObject(from, to, objective);
+            objToServer.writeObject(wrapperObject);
+            objToServer.flush();
 
-        } catch (IOException | NoSuchAlgorithmException | ClassNotFoundException | InvalidKeyException e) {
+            // Server should return other.publicKey and iv Random
+            System.out.println("From server");
+            wrapperObject = (WrapperObject) objFromServer.readObject();
+            // Decrypt meta dada from server
+            cipher.init(Cipher.DECRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
+            from = cipher.doFinal(wrapperObject.getFrom());
+            System.out.println("From: (" + Base64.getEncoder().encodeToString(wrapperObject.getFrom()) + ") " + new String(from));
+            to = cipher.doFinal(wrapperObject.getTo());
+            System.out.println("To: (" + Base64.getEncoder().encodeToString(wrapperObject.getTo()) + ") " + new String(to));
+            objective = cipher.doFinal(wrapperObject.getObjective());
+            System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
+
+            if (new String(objective).equalsIgnoreCase("success")) {
+                System.out.println("Other is active");
+
+                OtherClient otherClient = wrapperObject.getOtherClient();
+                // Calculate the shared secret key with other
+                keyAgreement.doPhase(otherClient.getOtherPublicKey(), true);
+                otherClient.setSecretKeyWithOther(new SecretKeySpec(shortenKey(keyAgreement.generateSecret()), "AES"));
+                // Calculate the shared IV
+                otherClient.setIvWithOther(new IvParameterSpec(otherClient.getIvByte()));
+                // Print other's keys
+                System.out.println("Other's Public Key: " + Base64.getEncoder().encodeToString(otherClient.getOtherPublicKey().getEncoded()));
+                System.out.println("Shared secret key: " + Base64.getEncoder().encodeToString(otherClient.getSecretKeyWithOther().getEncoded()));
+                System.out.println("Shared IV: " + Base64.getEncoder().encodeToString(otherClient.getIvWithOther().getIV()));
+            } else {
+                System.out.println("Other is inactive");
+            }
+
+
+
+        } catch (IOException | NoSuchAlgorithmException | ClassNotFoundException | InvalidKeyException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
         }
     }
