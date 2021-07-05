@@ -7,11 +7,20 @@ public class WrapperObject implements Serializable {
     private byte[] to;
     private byte[] objective;
     private OtherClient otherClient;
+    private byte[] messageBody;
 
     public WrapperObject(byte[] from, byte[] to, byte[] objective) {
         this.from = from;
         this.to = to;
         this.objective = objective;
+    }
+
+    public byte[] getMessageBody() {
+        return messageBody;
+    }
+
+    public void setMessageBody(byte[] messageBody) {
+        this.messageBody = messageBody;
     }
 
     public byte[] getFrom() {
