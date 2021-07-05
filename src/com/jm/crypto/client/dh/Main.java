@@ -67,6 +67,8 @@ public class Main {
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             WrapperObject wrapperObject;
+            OtherClient otherClient = null;
+
             byte[] from;
             byte[] to;
             byte[] objective;
@@ -92,7 +94,6 @@ public class Main {
                 // Server should return other.publicKey and iv Random
                 System.out.println("From server");
                 wrapperObject = (WrapperObject) objFromServer.readObject();
-                OtherClient otherClient = wrapperObject.getOtherClient();
 
                 // Decrypt meta dada from server
                 cipher.init(Cipher.DECRYPT_MODE, serverProxy.getSecretKeyWithServer(), serverProxy.getIvWithServer());
@@ -104,6 +105,10 @@ public class Main {
                 System.out.println("Objective: (" + Base64.getEncoder().encodeToString(wrapperObject.getObjective()) + ") " + new String(objective));
 
                 String obj = new String(objective);
+                if (obj.equalsIgnoreCase("initial")) {
+                    otherClient = wrapperObject.getOtherClient();
+                }
+
                 if (obj.equalsIgnoreCase("active") || obj.equalsIgnoreCase("initial")) {
                     System.out.println("Other is active");
 
